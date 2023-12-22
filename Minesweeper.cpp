@@ -1,9 +1,13 @@
+#include <conio.h>
 #include <iostream>
-#include <vector>
+#include <stdlib.h>
 
 #define BEGINNER 1
 #define INTERMEDIATE 2
 #define ADVANCED 3
+#define QUIT 4
+
+#define NOQUIT 0
 
 #define BOMB '*'
 
@@ -31,12 +35,39 @@ public:
 	void printBoard()
 	{
 		cout << "\n";
+		cout << "    ";
 
 		for (int i = 0; i < m_size; i++)
 		{
+			cout << i << " ";
+			if (i < 10)
+			{
+				cout << " ";
+			}
+		}
+
+		cout << "\n";
+		cout << "   ";
+
+		for (int i = 0; i < m_size; i++)
+		{
+			cout << "___";
+		}
+
+		cout << "\n";
+
+		for (int i = 0; i < m_size; i++)
+		{
+			cout << i;
+			if (i < 10) 
+			{
+				cout << " ";
+			}
+			cout << "| ";
+
 			for (int j = 0; j < m_size; j++)
 			{
-				cout << getVal(i, j) << " ";
+				cout << getVal(i, j) << "  ";
 			}
 			cout << "\n";
 		}
@@ -50,6 +81,8 @@ class actualBoard : public Board
 private:
 	void placeBombs(int bombs)
 	{
+		unsigned int time_ui = unsigned int(time(NULL));
+		srand(time_ui);
 
 		while (bombs > 0)
 		{
@@ -137,13 +170,14 @@ public:
 class userBoard : public Board
 {
 private:
+	int safeSquares;
 	void setBoard()
 	{
 		for (int i = 0; i < m_size; i++)
 		{
 			for (int j = 0; j < m_size; j++)
 			{
-				setVal(i, j, '-');
+				Board::setVal(i, j, '-');
 			}
 		}
 	}
@@ -151,6 +185,18 @@ public:
 	userBoard(int size, int bombs) : Board(size)
 	{
 		setBoard();
+		safeSquares = m_size * m_size - bombs;
+	}
+	
+	void setVal(int x, int y, char val)
+	{
+		Board::setVal(x, y, val);
+		safeSquares--;
+	}
+
+	bool hasWon()
+	{
+		return safeSquares == 0;
 	}
 };
 
@@ -161,16 +207,20 @@ int getDifficultyLevel()
 	cout << "1. Beginner\n";
 	cout << "2. Intermediate\n";
 	cout << "3. Advanced\n";
+	cout << "4. Quit Game\n";
 
 	while (true)
 	{
 		int difficulty;
 		scanf_s("%d", &difficulty);
 
-		if (difficulty == BEGINNER || difficulty == INTERMEDIATE || difficulty == ADVANCED)
+		if (difficulty == BEGINNER || difficulty == INTERMEDIATE || difficulty == ADVANCED || difficulty == QUIT)
 		{
+			system("cls");
 			return difficulty;
 		}
+
+		cout << "Please Enter Valid Difficulty Level (1, 2, 3, or 4 to quit)\n";
 	}
 }
 
@@ -197,9 +247,40 @@ void getGameValues(int difficulty, int* size, int* bombs)
 	}
 }
 
-void minesweeper()
+void recSearch(int x, int y, int size, actualBoard& actualBoard, userBoard& userBoard)
 {
+	if (x < 0 or y < 0 or x >= size or y >= size or userBoard.getVal(x, y) != '-')
+	{
+		return;
+	}
+	
+	int val = actualBoard.getVal(x, y);
+	if (val != '0')
+	{
+		userBoard.setVal(x, y, val);
+		return;
+	}
+
+
+	userBoard.setVal(x, y, '0');
+
+	recSearch(x + 1, y + 1, size, actualBoard, userBoard);
+	recSearch(x + 1, y, size, actualBoard, userBoard);
+	recSearch(x + 1, y - 1, size, actualBoard, userBoard);
+	recSearch(x, y + 1, size, actualBoard, userBoard);
+	recSearch(x, y - 1, size, actualBoard, userBoard);
+	recSearch(x - 1, y + 1, size, actualBoard, userBoard);
+	recSearch(x - 1, y, size, actualBoard, userBoard);
+	recSearch(x - 1, y - 1, size, actualBoard, userBoard);
+}
+
+int minesweeper()
+{
+	system("cls");
+
 	int difficulty = getDifficultyLevel();
+
+	if (difficulty == QUIT) { return QUIT; };
 
 	int size, bombs;
 
@@ -211,10 +292,9 @@ void minesweeper()
 
 	bool gameOver = false;
 
-	actualBoard.printBoard();
-
 	while (!gameOver)
 	{
+		system("cls");
 		userBoard.printBoard();
 
 		int x, y;
@@ -231,25 +311,40 @@ void minesweeper()
 
 		if (val == BOMB)
 		{
+			system("cls");
+			actualBoard.printBoard();
+			cout << "Sorry, you have lost! D:\n";
+			cout << "\nPress any key to continue.\n";
 			gameOver = true;
+			_getch();
 		}
 		else
 		{
-			// must set userBoard with number of mines
-			userBoard.setVal(x, y, val);
-			// recursive depth first search for 0s
+			recSearch(x, y, size, actualBoard, userBoard);
 
+			if (userBoard.hasWon())
+			{
+				system("cls");
+				actualBoard.printBoard();
+				cout << "Congratulations!\n" << "You have won!\n";
+				cout << "\nPress any key to continue!\n";
+				gameOver = true;
+				_getch();
+			}
+			
 		}
 
 	}
 
+	return NOQUIT;
+
 }
+
 
 int main(void)
 {
-	cout << "Welcome to Minesweeper!";
+	cout << "Welcome to Minesweeper!\n\n";
 
-
-	minesweeper();
+	while (minesweeper() != QUIT) {};
 
 }
