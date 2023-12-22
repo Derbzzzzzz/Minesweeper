@@ -2,6 +2,9 @@
 #include <iostream>
 #include <stdlib.h>
 
+#define _CRTDBG_MAP_ALLOC
+#include <crtdbg.h>
+
 #define BEGINNER 1
 #define INTERMEDIATE 2
 #define ADVANCED 3
@@ -26,6 +29,11 @@ public:
 	{
 		m_size = size;
 		array = new char[size * size]();
+	}
+
+	void free()
+	{
+		delete [] array;
 	}
 
 	char getVal(int x, int y) const { return array[index(x, y)]; };
@@ -336,6 +344,9 @@ int minesweeper()
 
 	}
 
+	actualBoard.free();
+	userBoard.free();
+
 	return NOQUIT;
 
 }
@@ -346,5 +357,7 @@ int main(void)
 	cout << "Welcome to Minesweeper!\n\n";
 
 	while (minesweeper() != QUIT) {};
+
+	_CrtDumpMemoryLeaks();
 
 }
